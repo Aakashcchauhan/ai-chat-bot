@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
-import { Settings, Code2, MessageSquare, BookOpen, Map, Sparkles, LogOut, User as UserIcon, ChevronDown } from 'lucide-react';
+import { Settings, Code2, MessageSquare, BookOpen, Map, Sparkles, LogOut, ChevronDown, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { chatAPI } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,6 +10,8 @@ export const ChatHeader = ({
   selectedMode,
   onModeChange,
   user,
+  userApiKey,
+  onApiKeyChange,
 }) => {
   const [languages, setLanguages] = useState([]);
   const [showSettings, setShowSettings] = useState(false);
@@ -46,10 +48,10 @@ export const ChatHeader = ({
   }, []);
 
   const modes = [
-    { id: 'code', label: 'Code Generator', icon: Code2 },
-    { id: 'chat', label: 'Chat', icon: MessageSquare },
-    { id: 'explain', label: 'Explain', icon: BookOpen },
-    { id: 'roadmap', label: 'Roadmap', icon: Map },
+    { id: 'code', label: 'Code', icon: Code2, color: 'from-blue-500 to-cyan-500' },
+    { id: 'chat', label: 'Chat', icon: MessageSquare, color: 'from-violet-500 to-purple-500' },
+    { id: 'explain', label: 'Explain', icon: BookOpen, color: 'from-amber-500 to-orange-500' },
+    { id: 'roadmap', label: 'Roadmap', icon: Map, color: 'from-emerald-500 to-teal-500' },
   ];
 
   const getUserInitials = () => {
@@ -66,110 +68,88 @@ export const ChatHeader = ({
 
   return (
     <>
-      <header className="sticky top-0 z-40 bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg border-b border-gray-200 dark:border-gray-800 shadow-sm">
+      <header className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/60 dark:border-slate-700/60">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-          <div className="flex items-start md:items-center justify-between py-3 md:py-4">
+          <div className="flex items-center justify-between py-3 md:py-4 gap-4">
             {/* Logo and Brand */}
-            <div className="flex flex-col gap-2 min-w-0 flex-1">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg sm:rounded-xl blur opacity-50"></div>
-                  <div className="relative bg-gradient-to-br from-primary-500 to-primary-600 p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl shadow-lg">
-                    <Sparkles className="text-white" size={18} />
-                  </div>
-                </div>
-                <div className="min-w-0">
-                  <h1 className="text-base sm:text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent truncate">
-                    AI Code Generator
-                  </h1>
-                  <p className="hidden sm:block text-xs text-gray-500 dark:text-gray-400">
-                    Powered by Gemini AI
-                  </p>
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="relative flex-shrink-0">
+                <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-violet-500 rounded-xl blur opacity-40 animate-pulse-slow"></div>
+                <div className="relative bg-gradient-to-br from-indigo-500 to-violet-600 p-2 sm:p-2.5 rounded-xl shadow-lg shadow-indigo-500/25">
+                  <Sparkles className="text-white w-5 h-5 sm:w-6 sm:h-6" />
                 </div>
               </div>
-              
-              {/* Mode Selector - Below Logo on screens less than lg */}
-              <nav className="flex lg:hidden items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1 w-fit">
-                {modes.map((mode) => {
-                  const Icon = mode.icon;
-                  return (
-                    <button
-                      key={mode.id}
-                      onClick={() => onModeChange(mode.id)}
-                      className={cn(
-                        'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200',
-                        selectedMode === mode.id
-                          ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm'
-                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                      )}
-                      aria-label={mode.label}
-                      aria-current={selectedMode === mode.id ? 'page' : undefined}
-                    >
-                      <Icon size={16} />
-                      <span>{mode.label}</span>
-                    </button>
-                  );
-                })}
-              </nav>
+              <div className="min-w-0 hidden sm:block">
+                <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent truncate">
+                  AI Code Assistant
+                </h1>
+                <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                  <Zap className="w-3 h-3 text-amber-500" />
+                  <span>Powered by Gemini</span>
+                </div>
+              </div>
             </div>
+            
+            {/* Mode Selector - Center */}
+            <nav className="flex items-center gap-1 bg-slate-100/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-xl p-1 border border-slate-200/50 dark:border-slate-700/50">
+              {modes.map((mode) => {
+                const Icon = mode.icon;
+                const isActive = selectedMode === mode.id;
+                return (
+                  <button
+                    key={mode.id}
+                    onClick={() => onModeChange(mode.id)}
+                    className={cn(
+                      'relative flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200',
+                      isActive
+                        ? 'text-white shadow-md'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-700/50'
+                    )}
+                    aria-label={mode.label}
+                    aria-current={isActive ? 'page' : undefined}
+                  >
+                    {isActive && (
+                      <div className={`absolute inset-0 bg-gradient-to-r ${mode.color} rounded-lg`}></div>
+                    )}
+                    <Icon size={16} className="relative z-10" />
+                    <span className="relative z-10 hidden sm:inline">{mode.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
 
-            {/* Desktop Controls */}
-            <div className="hidden lg:flex items-center gap-3">
-              {/* Mode Selector - On lg screens and above, show on right side */}
-              <nav className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
-                {modes.map((mode) => {
-                  const Icon = mode.icon;
-                  return (
-                    <button
-                      key={mode.id}
-                      onClick={() => onModeChange(mode.id)}
-                      className={cn(
-                        'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200',
-                        selectedMode === mode.id
-                          ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm'
-                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                      )}
-                      aria-label={mode.label}
-                      aria-current={selectedMode === mode.id ? 'page' : undefined}
-                    >
-                      <Icon size={16} />
-                      <span>{mode.label}</span>
-                    </button>
-                  );
-                })}
-              </nav>
-
-              <div className="w-px h-6 bg-gray-300 dark:bg-gray-700"></div>
-
+            {/* Right Controls */}
+            <div className="flex items-center gap-2">
               {/* Settings */}
               <div className="relative" ref={settingsRef}>
                 <button
                   onClick={() => setShowSettings(!showSettings)}
                   className={cn(
-                    'p-2.5 rounded-lg transition-all duration-200',
-                    'hover:bg-gray-100 dark:hover:bg-gray-800',
-                    showSettings && 'bg-gray-100 dark:bg-gray-800'
+                    'p-2.5 rounded-xl transition-all duration-200',
+                    'hover:bg-slate-100 dark:hover:bg-slate-800',
+                    showSettings && 'bg-slate-100 dark:bg-slate-800'
                   )}
                   aria-label="Settings"
                   aria-expanded={showSettings}
                 >
-                  <Settings size={20} className="text-gray-600 dark:text-gray-400" />
+                  <Settings size={20} className="text-slate-600 dark:text-slate-400" />
                 </button>
 
                 {showSettings && (
-                  <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 py-3 px-4">
-                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+                  <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 py-4 px-5 animate-scale-in z-50">
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                      <Settings size={16} className="text-indigo-500" />
                       Settings
                     </h3>
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                           Programming Language
                         </label>
                         <select
                           value={selectedLanguage}
                           onChange={(e) => onLanguageChange(e.target.value)}
-                          className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                          className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
                         >
                           {languages.map((lang) => (
                             <option key={lang.id} value={lang.id}>
@@ -178,21 +158,34 @@ export const ChatHeader = ({
                           ))}
                         </select>
                       </div>
+                      <div className="pt-3 border-t border-slate-200 dark:border-slate-700">
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                          Personal Gemini API Key
+                        </label>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
+                          Optional. Used if the default key fails.
+                        </p>
+                        <input
+                          type="password"
+                          value={userApiKey}
+                          onChange={(e) => onApiKeyChange?.(e.target.value)}
+                          placeholder="AIza..."
+                          className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                        />
+                      </div>
                     </div>
                   </div>
                 )}
               </div>
-
-              <div className="w-px h-6 bg-gray-300 dark:bg-gray-700"></div>
 
               {/* User Menu */}
               <div className="relative" ref={userMenuRef}>
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
                   className={cn(
-                    'flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200',
-                    'hover:bg-gray-100 dark:hover:bg-gray-800',
-                    showUserMenu && 'bg-gray-100 dark:bg-gray-800'
+                    'flex items-center gap-2 p-1.5 rounded-xl transition-all duration-200',
+                    'hover:bg-slate-100 dark:hover:bg-slate-800',
+                    showUserMenu && 'bg-slate-100 dark:bg-slate-800'
                   )}
                   aria-label="User menu"
                   aria-expanded={showUserMenu}
@@ -201,28 +194,43 @@ export const ChatHeader = ({
                     <img
                       src={user.photoURL}
                       alt={user.displayName || 'User avatar'}
-                      className="w-8 h-8 rounded-full ring-2 ring-gray-200 dark:ring-gray-700"
+                      className="w-8 h-8 rounded-xl ring-2 ring-slate-200 dark:ring-slate-700"
                     />
                   ) : (
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white font-semibold text-sm ring-2 ring-gray-200 dark:ring-gray-700">
+                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white font-bold text-sm ring-2 ring-slate-200 dark:ring-slate-700 shadow-sm">
                       {getUserInitials()}
                     </div>
                   )}
-                  <ChevronDown size={16} className={cn(
-                    'text-gray-500 dark:text-gray-400 transition-transform',
+                  <ChevronDown size={14} className={cn(
+                    'text-slate-500 dark:text-slate-400 transition-transform hidden sm:block',
                     showUserMenu && 'rotate-180'
                   )} />
                 </button>
 
                 {showUserMenu && (
-                  <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                    <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
-                      <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                        {user?.displayName || 'User'}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
-                        {user?.email}
-                      </p>
+                  <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden animate-scale-in z-50">
+                    <div className="px-4 py-4 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+                      <div className="flex items-center gap-3">
+                        {user?.photoURL ? (
+                          <img
+                            src={user.photoURL}
+                            alt={user.displayName || 'User avatar'}
+                            className="w-12 h-12 rounded-xl ring-2 ring-white dark:ring-slate-700 shadow-md"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white font-bold text-lg ring-2 ring-white dark:ring-slate-700 shadow-md">
+                            {getUserInitials()}
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-slate-900 dark:text-white truncate">
+                            {user?.displayName || 'User'}
+                          </p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                            {user?.email}
+                          </p>
+                        </div>
+                      </div>
                     </div>
                     
                     <button
@@ -230,79 +238,45 @@ export const ChatHeader = ({
                         signOut();
                         setShowUserMenu(false);
                       }}
-                      className="w-full px-4 py-3 text-left text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 transition-colors"
+                      className="w-full px-4 py-3 text-left text-sm font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-3 transition-colors"
                     >
-                      <LogOut size={16} />
+                      <LogOut size={18} />
                       Sign Out
                     </button>
                   </div>
                 )}
               </div>
             </div>
+          </div>
+        </div>
+      </header>
 
-            {/* Mobile/Tablet Controls - Show on screens less than lg */}
-            <div className="lg:hidden flex items-center gap-2">
-              <button
-                onClick={() => setShowSettings(!showSettings)}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-                aria-label="Settings"
-              >
-                <Settings size={20} className="text-gray-600 dark:text-gray-400" />
-              </button>
-              
-              <button
-                onClick={() => setShowUserMenu(!showUserMenu)}
-                className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-                aria-label="User menu"
-              >
+      {/* Mobile User Menu Overlay */}
+      {showUserMenu && (
+        <div className="lg:hidden fixed inset-0 z-50 bg-slate-900/20 backdrop-blur-sm" onClick={() => setShowUserMenu(false)}>
+          <div className="absolute top-16 right-4 w-72 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden animate-scale-in" onClick={e => e.stopPropagation()}>
+            <div className="px-4 py-4 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+              <div className="flex items-center gap-3">
                 {user?.photoURL ? (
                   <img
                     src={user.photoURL}
                     alt={user.displayName || 'User avatar'}
-                    className="w-8 h-8 rounded-full ring-2 ring-gray-200 dark:ring-gray-700"
+                    className="w-12 h-12 rounded-xl ring-2 ring-white dark:ring-slate-700 shadow-md"
                   />
                 ) : (
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white font-semibold text-sm">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white font-bold text-lg ring-2 ring-white dark:ring-slate-700 shadow-md">
                     {getUserInitials()}
                   </div>
                 )}
-              </button>
-            </div>
-          </div>
-
-          {/* Mobile Settings Panel - Show on screens less than lg */}
-          {showSettings && (
-            <div className="lg:hidden py-4 border-t border-gray-200 dark:border-gray-800">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Programming Language
-              </label>
-              <select
-                value={selectedLanguage}
-                onChange={(e) => onLanguageChange(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-              >
-                {languages.map((lang) => (
-                  <option key={lang.id} value={lang.id}>
-                    {lang.icon} {lang.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-        </div>
-      </header>
-
-      {/* Mobile User Menu Dropdown */}
-      {showUserMenu && (
-        <div className="lg:hidden fixed inset-0 z-50 bg-black/20 backdrop-blur-sm" onClick={() => setShowUserMenu(false)}>
-          <div className="absolute top-16 right-4 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
-              <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                {user?.displayName || 'User'}
-              </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
-                {user?.email}
-              </p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-slate-900 dark:text-white truncate">
+                    {user?.displayName || 'User'}
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                    {user?.email}
+                  </p>
+                </div>
+              </div>
             </div>
             
             <button
@@ -310,9 +284,9 @@ export const ChatHeader = ({
                 signOut();
                 setShowUserMenu(false);
               }}
-              className="w-full px-4 py-3 text-left text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 transition-colors"
+              className="w-full px-4 py-3 text-left text-sm font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-3 transition-colors"
             >
-              <LogOut size={16} />
+              <LogOut size={18} />
               Sign Out
             </button>
           </div>

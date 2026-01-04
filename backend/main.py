@@ -76,12 +76,15 @@ async def chat(request: ChatRequest, current_user: Optional[dict] = Depends(get_
     - **user_id**: Firebase UID (optional, from auth token)
     """
     try:
+        print(f"📨 Chat request: mode={request.mode}, lang={request.language}, msg={request.message[:50]}...")
         result = await ai_service.generate_chat_response(
             message=request.message,
             conversation_history=request.conversation_history,
             language=request.language,
-            mode=request.mode
+            mode=request.mode,
+            api_key=request.api_key
         )
+        print(f"✅ AI response received, has_code={result.get('has_code')}")
         
         response = ChatResponse(
             message=result["message"],
@@ -114,6 +117,9 @@ async def chat(request: ChatRequest, current_user: Optional[dict] = Depends(get_
         return response
         
     except Exception as e:
+        import traceback
+        print(f"❌ Chat error: {str(e)}")
+        traceback.print_exc()
         raise HTTPException(
             status_code=500,
             detail=f"Error processing chat request: {str(e)}"
@@ -135,7 +141,8 @@ async def generate_code(request: CodeGenerationRequest):
             prompt=request.prompt,
             language=request.language,
             include_comments=request.include_comments,
-            include_tests=request.include_tests
+            include_tests=request.include_tests,
+            api_key=request.api_key
         )
         
         return {
@@ -164,7 +171,8 @@ async def chat_stream(request: ChatRequest):
                 message=request.message,
                 conversation_history=request.conversation_history,
                 language=request.language,
-                mode=request.mode
+                mode=request.mode,
+                api_key=request.api_key
             ):
                 yield f"data: {json.dumps({'content': chunk})}\n\n"
         

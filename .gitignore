@@ -23,15 +23,16 @@ wheels/
 .installed.cfg
 *.egg
 
-# Environment variables
+# Environment files
 .env
 .env.local
 .env.*.local
 backend/.env
 frontend/.env.local
 
-# Firebase credentials (IMPORTANT - Never commit this!)
+# Firebase credentials
 backend/firebase-credentials.json
+firebase-credentials.json
 
 # Node.js
 node_modules/
@@ -74,3 +75,9 @@ backend/firebase-credentials.json
 backend/firebase-credentials.json
 
 backend/firebase-credentials.json
+
+# Environment files
+.env
+.env.local
+backend/.env
+frontend/.env.local

@@ -26,6 +26,7 @@ class ChatRequest(BaseModel):
     language: Optional[str] = Field(default="python", description="Programming language for code generation")
     mode: Literal["code", "chat", "explain", "roadmap"] = Field(default="code", description="Chat mode")
     user_id: Optional[str] = None  # Firebase UID
+    api_key: Optional[str] = Field(default=None, description="User-supplied Gemini API key override")
 
 
 class CodeGenerationRequest(BaseModel):
@@ -34,6 +35,7 @@ class CodeGenerationRequest(BaseModel):
     language: str = Field(default="python")
     include_comments: bool = Field(default=True)
     include_tests: bool = Field(default=False)
+    api_key: Optional[str] = Field(default=None, description="User-supplied Gemini API key override")
 
 
 class ChatResponse(BaseModel):

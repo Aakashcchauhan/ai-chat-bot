@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { Mail, Lock, User, AlertCircle, Loader2 } from 'lucide-react';
+import { Mail, Lock, User, AlertCircle, Loader2, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
@@ -58,54 +58,64 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 px-4">
-      <div className="max-w-md w-full space-y-8 bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 px-4 py-8 relative overflow-hidden">
+      {/* Background decoration */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-indigo-500 rounded-full blur-3xl opacity-20" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-violet-500 rounded-full blur-3xl opacity-20" />
+      </div>
+      
+      <div className="max-w-md w-full space-y-6 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 relative z-10">
         <div className="text-center">
-          <div className="mx-auto w-16 h-16 bg-primary-600 rounded-full flex items-center justify-center mb-4">
-            <User className="text-white" size={32} />
+          <div className="relative inline-block mb-6">
+            <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-violet-500 blur-xl opacity-50 rounded-full" />
+            <div className="relative w-16 h-16 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/25">
+              <Sparkles className="text-white" size={32} />
+            </div>
           </div>
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
+          <h2 className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-indigo-900 dark:from-white dark:to-indigo-200 bg-clip-text text-transparent">
             Create Account
           </h2>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">
+          <p className="mt-2 text-slate-600 dark:text-slate-400">
             Join AI Code Generator today
           </p>
         </div>
 
         {error && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 flex items-start gap-3">
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 flex items-start gap-3">
             <AlertCircle className="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" size={20} />
             <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               Display Name
             </label>
             <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+              <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input
                 type="text"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 placeholder="John Doe"
                 className={cn(
-                  'w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600',
-                  'bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
-                  'focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent'
+                  'w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700',
+                  'bg-white dark:bg-slate-800 text-slate-900 dark:text-white',
+                  'focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent',
+                  'transition-all duration-200 placeholder:text-slate-400'
                 )}
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               Email Address
             </label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input
                 type="email"
                 required
@@ -113,20 +123,21 @@ export default function SignUpPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 className={cn(
-                  'w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600',
-                  'bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
-                  'focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent'
+                  'w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700',
+                  'bg-white dark:bg-slate-800 text-slate-900 dark:text-white',
+                  'focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent',
+                  'transition-all duration-200 placeholder:text-slate-400'
                 )}
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               Password
             </label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input
                 type="password"
                 required
@@ -134,20 +145,21 @@ export default function SignUpPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 className={cn(
-                  'w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600',
-                  'bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
-                  'focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent'
+                  'w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700',
+                  'bg-white dark:bg-slate-800 text-slate-900 dark:text-white',
+                  'focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent',
+                  'transition-all duration-200 placeholder:text-slate-400'
                 )}
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               Confirm Password
             </label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input
                 type="password"
                 required
@@ -155,9 +167,10 @@ export default function SignUpPage() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="••••••••"
                 className={cn(
-                  'w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600',
-                  'bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
-                  'focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent'
+                  'w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700',
+                  'bg-white dark:bg-slate-800 text-slate-900 dark:text-white',
+                  'focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent',
+                  'transition-all duration-200 placeholder:text-slate-400'
                 )}
               />
             </div>
@@ -167,10 +180,12 @@ export default function SignUpPage() {
             type="submit"
             disabled={loading}
             className={cn(
-              'w-full py-3 px-4 rounded-lg font-medium text-white',
-              'bg-primary-600 hover:bg-primary-700 transition-colors',
-              'focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2',
-              'disabled:opacity-50 disabled:cursor-not-allowed',
+              'w-full py-3.5 px-4 rounded-xl font-semibold text-white',
+              'bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700',
+              'shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30',
+              'transition-all duration-200',
+              'focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2',
+              'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg',
               'flex items-center justify-center gap-2'
             )}
           >
@@ -187,10 +202,10 @@ export default function SignUpPage() {
 
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
+            <div className="w-full border-t border-slate-200 dark:border-slate-700"></div>
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-white dark:bg-gray-800 text-gray-500">Or continue with</span>
+            <span className="px-4 bg-white dark:bg-slate-900 text-slate-500">Or continue with</span>
           </div>
         </div>
 
@@ -198,13 +213,13 @@ export default function SignUpPage() {
           onClick={handleGoogleSignIn}
           disabled={loading}
           className={cn(
-            'w-full py-3 px-4 rounded-lg font-medium',
-            'border border-gray-300 dark:border-gray-600',
-            'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200',
-            'hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors',
-            'focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2',
+            'w-full py-3.5 px-4 rounded-xl font-medium',
+            'border border-slate-200 dark:border-slate-700',
+            'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200',
+            'hover:bg-slate-50 dark:hover:bg-slate-700 transition-all duration-200',
+            'focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2',
             'disabled:opacity-50 disabled:cursor-not-allowed',
-            'flex items-center justify-center gap-2'
+            'flex items-center justify-center gap-3'
           )}
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -228,9 +243,9 @@ export default function SignUpPage() {
           Sign up with Google
         </button>
 
-        <p className="text-center text-sm text-gray-600 dark:text-gray-400">
+        <p className="text-center text-sm text-slate-600 dark:text-slate-400">
           Already have an account?{' '}
-          <Link href="/login" className="font-medium text-primary-600 hover:text-primary-500">
+          <Link href="/login" className="font-semibold text-indigo-600 hover:text-indigo-500">
             Sign in
           </Link>
         </p>

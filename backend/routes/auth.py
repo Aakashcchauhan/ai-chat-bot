@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from models import TokenVerifyRequest, UserProfileResponse, ChatHistoryResponse
 from firebase_config import firebase_service
+from firebase_admin import firestore
 from dependencies import get_current_user
 from typing import Optional
 
@@ -29,7 +30,7 @@ async def verify_token(request: TokenVerifyRequest):
             'email': email,
             'display_name': name,
             'photo_url': picture,
-            'last_login': firebase_service.db.SERVER_TIMESTAMP if firebase_service.db else None
+            'last_login': firestore.SERVER_TIMESTAMP if firebase_service.db else None
         }
         
         firebase_service.create_or_update_user(uid, user_data)

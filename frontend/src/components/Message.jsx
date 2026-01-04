@@ -252,15 +252,18 @@ export const Message = ({ message }) => {
     >
       <div
         className={cn(
-          'max-w-[85%] rounded-lg px-4 py-3 shadow-md',
+          'max-w-[85%] rounded-2xl px-5 py-4 shadow-sm',
           isUser
-            ? 'bg-primary-600 text-white'
-            : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100'
+            ? 'bg-gradient-to-br from-indigo-500 to-violet-600 text-white'
+            : 'bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 text-slate-900 dark:text-slate-100'
         )}
       >
-        <div className="flex items-start gap-2 mb-1">
+        <div className="flex items-start gap-2 mb-2">
           <div className="flex-1">
-            <div className="text-xs font-semibold opacity-70 mb-1">
+            <div className={cn(
+              "text-xs font-semibold mb-1",
+              isUser ? 'text-indigo-200' : 'text-slate-500 dark:text-slate-400'
+            )}>
               {isUser ? 'You' : 'AI Assistant'}
             </div>
           </div>
@@ -278,29 +281,29 @@ export const Message = ({ message }) => {
 
                 if (!inline && language) {
                   return (
-                    <div className="code-block relative group my-4">
-                      <div className="flex items-center justify-between bg-gray-700 px-4 py-2 rounded-t-lg">
-                        <span className="text-xs text-gray-300 font-mono">
+                    <div className="code-block relative group my-4 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700">
+                      <div className="flex items-center justify-between bg-slate-800 px-4 py-2.5">
+                        <span className="text-xs text-slate-400 font-mono font-medium uppercase tracking-wide">
                           {language}
                         </span>
-                        <div className="flex gap-2">
+                        <div className="flex gap-1">
                           <button
                             onClick={() => handleCopyCode(code, language)}
-                            className="text-gray-300 hover:text-white transition-colors p-1"
+                            className="text-slate-400 hover:text-white transition-colors p-1.5 hover:bg-slate-700 rounded-md"
                             title="Copy code"
                           >
                             {copiedCode === language ? (
-                              <Check size={16} />
+                              <Check size={14} />
                             ) : (
-                              <Copy size={16} />
+                              <Copy size={14} />
                             )}
                           </button>
                           <button
                             onClick={() => handleDownloadCode(code, language)}
-                            className="text-gray-300 hover:text-white transition-colors p-1"
+                            className="text-slate-400 hover:text-white transition-colors p-1.5 hover:bg-slate-700 rounded-md"
                             title="Download code"
                           >
-                            <Download size={16} />
+                            <Download size={14} />
                           </button>
                         </div>
                       </div>
@@ -310,10 +313,8 @@ export const Message = ({ message }) => {
                         PreTag="div"
                         customStyle={{
                           margin: 0,
-                          borderTopLeftRadius: 0,
-                          borderTopRightRadius: 0,
-                          borderBottomLeftRadius: '0.5rem',
-                          borderBottomRightRadius: '0.5rem',
+                          borderRadius: 0,
+                          fontSize: '0.875rem',
                         }}
                         {...props}
                       >
@@ -326,7 +327,7 @@ export const Message = ({ message }) => {
                 return (
                   <code
                     className={cn(
-                      'bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded text-sm font-mono',
+                      'bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded-md text-sm font-mono text-indigo-600 dark:text-indigo-400',
                       className
                     )}
                     {...props}

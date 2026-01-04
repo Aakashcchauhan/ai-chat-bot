@@ -1,18 +1,25 @@
 import google.generativeai as genai
 from typing import List, Dict, Optional
 import re
+import json
 from config import settings
 from models import Message
 
 
 class AIService:
-    """Service for AI code generation and chat interactions"""
+    """Service for AI code generation and chat interactions using Gemini"""
     
     def __init__(self):
-        genai.configure(api_key=settings.gemini_api_key)
-        # Use gemini-2.5-flash for all modes
-        self.model = genai.GenerativeModel("gemini-2.5-flash")
+        self.default_api_key = settings.gemini_api_key
         self.model_name = settings.gemini_model
+        genai.configure(api_key=self.default_api_key)
+        self.model = genai.GenerativeModel(self.model_name)
+
+    def _get_model(self, override_key: Optional[str] = None):
+        """Return a Gemini model using override key when provided"""
+        if override_key:
+            genai.configure(api_key=override_key)
+        return genai.GenerativeModel(self.model_name)
         
     def _detect_roadmap_request(self, message: str) -> bool:
         """Detect if user is asking for a roadmap"""
@@ -39,34 +46,6 @@ Guidelines:
 - When generating code, wrap it in markdown code blocks with the language specified
 - Handle edge cases and add error handling where appropriate
 - Be concise but thorough in explanations
-- **IMPORTANT**: If the user asks for a "roadmap", "learning path", "study plan", or similar, respond ONLY with a JSON structure (wrapped in ```json code block) following this EXACT format:
-{{
-  "topicname": {{
-    "title": "Full Course/Topic Title",
-    "description": "Brief one-sentence description",
-    "modules": [
-      {{
-        "id": 1,
-        "title": "Module Title",
-        "description": "Module description",
-        "topics": ["Topic 1", "Topic 2", "Topic 3"],
-        "duration": "2 weeks",
-        "difficulty": "Beginner",
-        "prerequisites": []
-      }},
-      {{
-        "id": 2,
-        "title": "Next Module Title",
-        "description": "Module description",
-        "topics": ["Topic 1", "Topic 2"],
-        "duration": "3 weeks",
-        "difficulty": "Intermediate",
-        "prerequisites": [1]
-      }}
-    ]
-  }}
-}}
-Return ONLY the JSON, no other text before or after.
 """
         elif mode == "explain":
             return f"""You are an expert programming tutor specializing in {language}.
@@ -102,38 +81,48 @@ Guidelines:
         message: str,
         conversation_history: List[Message],
         language: str = "python",
-        mode: str = "code"
+        mode: str = "code",
+        api_key: Optional[str] = None
     ) -> Dict:
         """Generate AI response for chat"""
         
         try:
+            model = self._get_model(api_key)
+            
             # Detect if this is a roadmap request
             is_roadmap_request = self._detect_roadmap_request(message)
             
             if is_roadmap_request:
                 # Special handling for roadmap requests
-                return await self._generate_roadmap_response(message, language)
+                return await self._generate_roadmap_response(message, language, api_key)
             
             # Create system prompt
             system_prompt = self._create_system_prompt(mode, language)
             
             # Build conversation history for Gemini
-            chat_history = []
+            history = []
             for msg in conversation_history[-10:]:  # Keep last 10 messages for context
                 role = "user" if msg.role == "user" else "model"
-                chat_history.append({
+                history.append({
                     "role": role,
                     "parts": [msg.content]
                 })
             
-            # Start chat with history
-            chat = self.model.start_chat(history=chat_history)
+            # Create chat with history
+            chat = model.start_chat(history=history)
             
-            # Create full prompt with system instructions
-            full_prompt = f"{system_prompt}\n\nUser: {message}"
+            # Combine system prompt with user message
+            full_message = f"{system_prompt}\n\nUser request: {message}"
             
             # Generate response
-            response = chat.send_message(full_prompt)
+            response = chat.send_message(
+                full_message,
+                generation_config=genai.types.GenerationConfig(
+                    max_output_tokens=settings.max_tokens,
+                    temperature=settings.temperature
+                )
+            )
+            
             assistant_message = response.text
             
             # Check if response contains code
@@ -150,11 +139,11 @@ Guidelines:
         except Exception as e:
             raise Exception(f"Error generating AI response: {str(e)}")
     
-    async def _generate_roadmap_response(self, message: str, language: str = "python") -> Dict:
+    async def _generate_roadmap_response(self, message: str, language: str = "python", api_key: Optional[str] = None) -> Dict:
         """Generate a structured roadmap in JSON format"""
         
         try:
-            import json
+            model = self._get_model(api_key)
             
             # Extract the topic from the message
             topic = message.lower()
@@ -215,7 +204,15 @@ Return pure JSON only."""
             max_retries = 3
             for attempt in range(max_retries):
                 try:
-                    response = self.model.generate_content(prompt)
+                    full_prompt = "You are a JSON generator. Return only valid JSON, no markdown, no extra text.\n\n" + prompt
+                    response = model.generate_content(
+                        full_prompt,
+                        generation_config=genai.types.GenerationConfig(
+                            max_output_tokens=2048,
+                            temperature=0.7
+                        )
+                    )
+                    
                     assistant_message = response.text.strip()
                     
                     # Clean up the response
@@ -244,7 +241,7 @@ Return pure JSON only."""
                     else:
                         raise ValueError("Invalid roadmap structure")
                         
-                except json.JSONDecodeError as je:
+                except json.JSONDecodeError:
                     if attempt == max_retries - 1:
                         # Last attempt failed, return error message
                         error_roadmap = {
@@ -317,7 +314,6 @@ Return pure JSON only."""
                     }
                 ]
             }
-            import json
             formatted_json = json.dumps(fallback_roadmap, indent=2)
             final_message = f"```json\n{formatted_json}\n```"
             
@@ -333,11 +329,14 @@ Return pure JSON only."""
         prompt: str,
         language: str = "python",
         include_comments: bool = True,
-        include_tests: bool = False
+        include_tests: bool = False,
+        api_key: Optional[str] = None
     ) -> str:
         """Generate code based on prompt"""
         
         try:
+            model = self._get_model(api_key)
+            
             # Create detailed prompt
             system_prompt = f"""You are an expert {language} code generator.
 Generate clean, efficient, and production-ready code based on user requirements.
@@ -352,10 +351,15 @@ Requirements:
 - Wrap code in markdown code blocks with language specified
 """
             
-            full_prompt = f"{system_prompt}\n\n{prompt}"
-            
             # Generate code
-            response = self.model.generate_content(full_prompt)
+            full_prompt = f"{system_prompt}\n\n{prompt}"
+            response = model.generate_content(
+                full_prompt,
+                generation_config=genai.types.GenerationConfig(
+                    max_output_tokens=settings.max_tokens,
+                    temperature=settings.temperature
+                )
+            )
             
             return response.text
             
@@ -367,30 +371,39 @@ Requirements:
         message: str,
         conversation_history: List[Message],
         language: str = "python",
-        mode: str = "code"
+        mode: str = "code",
+        api_key: Optional[str] = None
     ):
         """Stream AI response for real-time chat (generator)"""
         
         try:
+            model = self._get_model(api_key)
             system_prompt = self._create_system_prompt(mode, language)
             
             # Build conversation history for Gemini
-            chat_history = []
+            history = []
             for msg in conversation_history[-10:]:
                 role = "user" if msg.role == "user" else "model"
-                chat_history.append({
+                history.append({
                     "role": role,
                     "parts": [msg.content]
                 })
             
-            # Start chat with history
-            chat = self.model.start_chat(history=chat_history)
+            # Create chat with history
+            chat = model.start_chat(history=history)
             
-            # Create full prompt with system instructions
-            full_prompt = f"{system_prompt}\n\nUser: {message}"
+            # Combine system prompt with user message
+            full_message = f"{system_prompt}\n\nUser request: {message}"
             
             # Stream response
-            response = chat.send_message(full_prompt, stream=True)
+            response = chat.send_message(
+                full_message,
+                generation_config=genai.types.GenerationConfig(
+                    max_output_tokens=settings.max_tokens,
+                    temperature=settings.temperature
+                ),
+                stream=True
+            )
             
             for chunk in response:
                 if chunk.text:

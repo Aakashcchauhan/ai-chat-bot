@@ -23,6 +23,7 @@ export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(false); // Start closed on mobile
   const [showModeNotification, setShowModeNotification] = useState(false);
   const [notificationMode, setNotificationMode] = useState('code');
+  const [userApiKey, setUserApiKey] = useState('');
   const { user, loading } = useAuth();
   const router = useRouter();
 
@@ -59,6 +60,22 @@ export default function Home() {
       }
     }
   }, [user, selectedMode]);
+
+  // Load stored user API key per user
+  useEffect(() => {
+    if (!user) return;
+    const storedKey = localStorage.getItem(`custom_api_key_${user.uid}`);
+    if (storedKey) {
+      setUserApiKey(storedKey);
+    }
+  }, [user]);
+
+  const handleApiKeyChange = (value) => {
+    setUserApiKey(value);
+    if (user) {
+      localStorage.setItem(`custom_api_key_${user.uid}`, value);
+    }
+  };
 
   const saveChats = (updatedChats) => {
     try {
@@ -294,7 +311,7 @@ export default function Home() {
         conversation_history: conversationHistory,
         language: selectedLanguage,
         mode: mode,
-      });
+      }, userApiKey);
 
       // Add assistant response
       const assistantMessage = {
@@ -324,12 +341,22 @@ export default function Home() {
     }
   };
 
+  // Handle suggestion click from empty state
+  const handleSuggestionClick = (prompt) => {
+    handleSendMessage(prompt);
+  };
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading...</p>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center animate-fade-in">
+          <div className="relative inline-flex">
+            <div className="absolute inset-0 bg-gradient-to-r from-primary-500 to-accent-500 rounded-2xl blur-xl opacity-30 animate-pulse"></div>
+            <div className="relative bg-gradient-to-br from-primary-500 to-accent-600 p-4 rounded-2xl shadow-glow">
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-white border-t-transparent"></div>
+            </div>
+          </div>
+          <p className="mt-6 text-slate-600 dark:text-slate-400 font-medium">Loading your workspace...</p>
         </div>
       </div>
     );
@@ -340,7 +367,7 @@ export default function Home() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="flex h-screen bg-slate-50 dark:bg-slate-900">
       {showModeNotification && (
         <ModeNotification
           mode={notificationMode}
@@ -357,15 +384,21 @@ export default function Home() {
         onToggle={() => setSidebarOpen(!sidebarOpen)}
         currentMode={selectedMode}
       />
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         <ChatHeader
           selectedLanguage={selectedLanguage}
           onLanguageChange={setSelectedLanguage}
           selectedMode={selectedMode}
           onModeChange={handleModeChange}
           user={user}
+          userApiKey={userApiKey}
+          onApiKeyChange={handleApiKeyChange}
         />
-        <ChatMessages messages={messages} isLoading={isLoading} />
+        <ChatMessages 
+          messages={messages} 
+          isLoading={isLoading} 
+          onSuggestionClick={handleSuggestionClick}
+        />
         <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
       </div>
     </div>
