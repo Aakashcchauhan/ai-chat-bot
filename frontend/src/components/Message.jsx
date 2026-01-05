@@ -195,7 +195,7 @@ export const Message = ({ message }) => {
                     {module.description}
                   </p>
                   <div className="flex items-center gap-3 mt-2 text-sm text-gray-500 dark:text-gray-400">
-                    <span>â±ï¸ {module.duration}</span>
+                    <span>⏱️ {module.duration}</span>
                   </div>
                 </div>
 
@@ -208,7 +208,7 @@ export const Message = ({ message }) => {
                         key={idx}
                         className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300"
                       >
-                        <span className="text-indigo-600 dark:text-indigo-400 mt-0.5">â€¢</span>
+                        <span className="text-indigo-600 dark:text-indigo-400 mt-0.5">•</span>
                         <span>{topic}</span>
                       </div>
                     ))}
