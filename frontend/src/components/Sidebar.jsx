@@ -100,15 +100,16 @@ export const Sidebar = ({
         </button>
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar - Fixed on mobile, relative on desktop */}
       <aside
         className={`
-          fixed top-0 left-0 h-full z-50
+          ${isMobile ? 'fixed' : 'relative'} top-0 left-0 h-full
+          ${isMobile ? 'z-50' : 'z-10'}
           bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl
           border-r border-slate-200/60 dark:border-slate-700/60
           shadow-2xl shadow-slate-900/10 dark:shadow-black/30
-          transition-all duration-300 ease-out
-          ${isOpen ? 'w-80 translate-x-0 opacity-100' : 'w-0 -translate-x-full opacity-0 pointer-events-none'}
+          transition-all duration-300 ease-out flex-shrink-0
+          ${isOpen ? 'w-80 translate-x-0 opacity-100' : 'w-0 -translate-x-0 opacity-0 pointer-events-none overflow-hidden'}
         `}
       >
         {/* Show content only when open */}
@@ -184,6 +185,12 @@ export const Sidebar = ({
                   chats.map((chat) => (
                     <div
                       key={chat.id}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onSelectChat(chat.id, chat);
+                        if (isMobile) onToggle();
+                      }}
                       className={`
                         group relative flex items-center gap-3 p-3 rounded-xl cursor-pointer
                         transition-all duration-200
@@ -202,13 +209,7 @@ export const Sidebar = ({
                       `}>
                         <MessageSquare className="h-4 w-4" />
                       </div>
-                      <div 
-                        className="flex-1 min-w-0"
-                        onClick={() => {
-                          onSelectChat(chat.id);
-                          if (isMobile) onToggle();
-                        }}
-                      >
+                      <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium text-slate-900 dark:text-white truncate">
                           {chat.title}
                         </div>
