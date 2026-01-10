@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 import remarkGfm from 'remark-gfm';
-import { Copy, Check, Download, ChevronDown, ChevronUp } from 'lucide-react';
+import { Copy, Check, Download, Clock3 } from 'lucide-react';
 import { cn, copyToClipboard, downloadAsFile } from '@/lib/utils';
 import { RoadmapVisualization } from './RoadmapVisualization';
 
@@ -13,7 +13,6 @@ import { RoadmapVisualization } from './RoadmapVisualization';
 export const Message = ({ message }) => {
   const [copiedCode, setCopiedCode] = React.useState(null);
   const [selectedModule, setSelectedModule] = React.useState(null);
-  const [showTopics, setShowTopics] = React.useState(false);
   const isUser = message.role === 'user';
 
   // Detect if message contains roadmap JSON
@@ -195,7 +194,8 @@ export const Message = ({ message }) => {
                     {module.description}
                   </p>
                   <div className="flex items-center gap-3 mt-2 text-sm text-gray-500 dark:text-gray-400">
-                    <span>⏱️ {module.duration}</span>
+                    <Clock3 className="h-4 w-4 text-indigo-500 dark:text-indigo-400" aria-hidden />
+                    <span>{module.duration}</span>
                   </div>
                 </div>
 
@@ -208,7 +208,10 @@ export const Message = ({ message }) => {
                         key={idx}
                         className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300"
                       >
-                        <span className="text-indigo-600 dark:text-indigo-400 mt-0.5">•</span>
+                        <span
+                          className="mt-1 inline-flex h-1.5 w-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400"
+                          aria-hidden
+                        />
                         <span>{topic}</span>
                       </div>
                     ))}

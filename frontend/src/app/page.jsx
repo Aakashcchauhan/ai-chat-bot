@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChatHeader } from '@/components/ChatHeader';
 import { ChatMessages } from '@/components/ChatMessages';
@@ -41,9 +41,16 @@ export default function Home() {
   // REFS FOR AUTO-SWITCHING (Prevents Race Conditions)
   // ---------------------------------------------------------------------------
   
-  const isAutoSwitching = useRef(false);
-  const pendingMessage = useRef(null);
+  const modeStateRef = useRef({ current: 'code', target: 'code', isSwitching: false });
+  const pendingMessageRef = useRef(null);
   const sendMessageRef = useRef(null); // Ref to hold the send function
+  const selectedModeRef = useRef('code');
+
+  // Keep refs in sync with state to avoid stale closures during mode transitions
+  useEffect(() => {
+    selectedModeRef.current = selectedMode;
+    modeStateRef.current.current = selectedMode;
+  }, [selectedMode]);
 
   // ---------------------------------------------------------------------------
   // AUTHENTICATION EFFECTS
@@ -121,97 +128,67 @@ export default function Home() {
   // ---------------------------------------------------------------------------
   // MODE DETECTION - DYNAMIC TAB SWITCHING ENGINE
   // ---------------------------------------------------------------------------
-  
-  const detectAppropriateMode = useCallback((message) => {
-    const lowerMessage = message.toLowerCase().trim();
-    
-    // -------------------------------------------------------------------------
-    // ROADMAP DETECTION (Highest Priority)
-    // -------------------------------------------------------------------------
-    const roadmapPatterns = [
-      // Direct roadmap mentions
+  const modePatterns = useMemo(() => ({
+    roadmap: [
       /\broadmap\b/,
+      /\broad\s*map\b/,
       /\blearning\s*path\b/,
       /\bstudy\s*plan\b/,
       /\bcurriculum\b/,
-      /\bcourse\s*path\b/,
+      /\bsyllabus\b/,
+      /\bcourse\s*(plan|outline|path)\b/,
       /\bcareer\s*path\b/,
-      /\blearning\s*journey\b/,
-      /\blearning\s*guide\b/,
-      /\bstudy\s*guide\b/,
-      
-      // Action phrases for roadmap creation
-      /create\s*(a\s*)?roadmap/,
-      /make\s*(a\s*)?roadmap/,
-      /generate\s*(a\s*)?roadmap/,
-      /build\s*(a\s*)?roadmap/,
-      /show\s*(me\s*)?(a\s*)?roadmap/,
-      /give\s*(me\s*)?(a\s*)?roadmap/,
-      /need\s*(a\s*)?roadmap/,
-      /want\s*(a\s*)?roadmap/,
-      
-      // Learning intent patterns
-      /how\s*(to|do\s*i)\s*(start\s*)?learn/,
-      /guide\s*to\s*learn/,
-      /where\s*(to|should\s*i)\s*start\s*learning/,
-      /what\s*should\s*i\s*learn/,
-      /step\s*by\s*step\s*(guide|plan|path)/,
-      /learning\s*resource/,
-      /become\s*(a\s*)?(.*?)\s*developer/,
-      /path\s*to\s*(become|learn)/,
-      /journey\s*to\s*learn/,
-      /master\s*(.*?)\s*from\s*scratch/,
-      /complete\s*(guide|path)\s*(to|for)/,
-    ];
-    
-    if (roadmapPatterns.some(pattern => pattern.test(lowerMessage))) {
-      console.log('🗺️ Detected: Roadmap mode - Auto-switching to Roadmap tab');
-      return 'roadmap';
-    }
-    
-    // -------------------------------------------------------------------------
-    // CODE GENERATION DETECTION
-    // -------------------------------------------------------------------------
-    const codePatterns = [
-      // Direct code requests
-      /\bwrite\s*(me\s*)?(a\s*)?(the\s*)?code\b/,
-      /\bwrite\s*(me\s*)?(a\s*)?(the\s*)?function\b/,
-      /\bwrite\s*(me\s*)?(a\s*)?(the\s*)?program\b/,
-      /\bwrite\s*(me\s*)?(a\s*)?(the\s*)?script\b/,
-      /\bwrite\s*(me\s*)?(a\s*)?(the\s*)?class\b/,
-      /\bcreate\s*(a\s*)?(the\s*)?function\b/,
-      /\bcreate\s*(a\s*)?(the\s*)?class\b/,
-      /\bcreate\s*(a\s*)?(the\s*)?program\b/,
-      /\bgenerate\s*(a\s*)?(the\s*)?code\b/,
+      /\bmodule\s+\d+/,
+      /\bweek\s+\d+/,
+      /\btimeline\b/,
+      /\bmilestone\b/,
+      /\broadmap\s*(for|to)\b/,
+      /\bplan\s*(to|for)\s*learn/,
+      /\bcreate\s*(a\s*)?(learning\s*)?(plan|path|roadmap)/,
+      /\bmake\s*(me\s*)?(a\s*)?roadmap/,
+      /\bgenerate\s*(a\s*)?roadmap/,
+      /\bbuild\s*(a\s*)?roadmap/,
+      /\bstudy\s*(journey|guide)/,
+      /\blearning\s*(journey|guide)/,
+      /\bcomplete\s*(guide|path)\s*(to|for)/,
+      /\bbeginner\s*(to|into)\s*(expert|pro)/,
+    ],
+    code: [
+      /\bwrite\s*(me\s*)?(a\s*)?(the\s*)?(code|function|program|script|class)\b/,
+      /\bcreate\s*(a\s*)?(the\s*)?(function|class|program|snippet)\b/,
+      /\bgenerate\s*(a\s*)?(code|function|snippet)\b/,
       /\bimplement\s+(a\s*)?(the\s*)?\w+/,
-      /\bmake\s*(me\s*)?(a\s*)?(the\s*)?function\b/,
-      
-      // Code-related task patterns
+      /\bmake\s*(me\s*)?(a\s*)?(the\s*)?(function|script)\b/,
       /\bcode\s*(for|to)\b/,
       /\bfunction\s*(to|that|for)\b/,
       /\bclass\s*(to|that|for)\b/,
       /\balgorithm\s*(for|to)\b/,
       /\bscript\s*(to|that|for)\b/,
       /\bprogram\s*(to|that|for)\b/,
-      
-      // Programming task patterns
       /\bsolve\s*(this\s*)?(problem|challenge)/,
       /\bdebug\s*(this|my)/,
-      /\bfix\s*(this|my)\s*code/,
+      /\bfix\s*(this|my)\s*(code|bug|error)/,
       /\brefactor\s*(this|my)/,
       /\boptimize\s*(this|my)/,
-    ];
-    
-    if (codePatterns.some(pattern => pattern.test(lowerMessage))) {
-      console.log('💻 Detected: Code mode');
-      return 'code';
-    }
-    
-    // -------------------------------------------------------------------------
-    // EXPLAIN MODE DETECTION
-    // -------------------------------------------------------------------------
-    const explainPatterns = [
+      /\bunit\s*test\b/,
+      /\btest\s*(cases|suite)/,
+      /\bexample\s*code\b/,
+      /\bcode\s*snippet\b/,
+      /\bapi\s*endpoint\b/,
+      /\bregex\s*(for|to)\b/,
+      /\bquery\s*(for|to)\b/,
+      /\bsql\s*(query|script)/,
+      /\bmigration\s*script\b/,
+      /\bdockerfile\b/,
+      /\bterraform\b/,
+      /\bstack\s*trace\b/,
+      /\bcompiler\s*error\b/,
+      /\bTypeScript\s*types?\b/,
+      /\binterface\s*definition\b/,
+    ],
+    explain: [
       /\bexplain\b/,
+      /\bwalk\s*me\s*through\b/,
       /\bwhat\s*(is|are|does|do)\b/,
       /\bhow\s*(does|do|is|are)\b/,
       /\bwhy\s*(does|do|is|are)\b/,
@@ -227,19 +204,36 @@ export default function Home() {
       /\bconcept\s*of\b/,
       /\bhow\s*to\s*use\b/,
       /\bwhen\s*(to|should\s*i)\s*use\b/,
-    ];
-    
-    if (explainPatterns.some(pattern => pattern.test(lowerMessage))) {
+      /\bcompare\b/,
+      /\bpros\s*and\s*cons\b/,
+      /\bexplain\s*this\s*code\b/,
+      /\bline\s*by\s*line\b/,
+      /\bwhy\s*do\s*i\s*get\s*this\s*error\b/,
+    ],
+  }), []);
+  
+  const detectAppropriateMode = useCallback((message) => {
+    const lowerMessage = message.toLowerCase().trim();
+    const matchesAny = (patterns) => patterns.some((pattern) => pattern.test(lowerMessage));
+
+    if (matchesAny(modePatterns.roadmap)) {
+      console.log('🗺️ Detected: Roadmap mode - Auto-switching to Roadmap tab');
+      return 'roadmap';
+    }
+
+    if (matchesAny(modePatterns.code)) {
+      console.log('💻 Detected: Code mode');
+      return 'code';
+    }
+
+    if (matchesAny(modePatterns.explain)) {
       console.log('📖 Detected: Explain mode');
       return 'explain';
     }
-    
-    // -------------------------------------------------------------------------
-    // DEFAULT: CHAT MODE
-    // -------------------------------------------------------------------------
+
     console.log('💬 Detected: Chat mode (default)');
     return 'chat';
-  }, []);
+  }, [modePatterns]);
 
   // ---------------------------------------------------------------------------
   // SEND MESSAGE TO API (Core Function)
@@ -308,6 +302,30 @@ export default function Home() {
     }
   }, [selectedLanguage, userApiKey, saveChatsToStorage]);
 
+  const flushPendingMessage = useCallback((loadedChats = chats) => {
+    const pending = pendingMessageRef.current;
+
+    if (!pending) {
+      modeStateRef.current.isSwitching = false;
+      return;
+    }
+
+    if (pending.mode !== selectedMode) {
+      return;
+    }
+
+    const history = pending.conversationHistory || [];
+    const chatSnapshot = pending.chatsSnapshot || loadedChats;
+
+    pendingMessageRef.current = null;
+    modeStateRef.current.isSwitching = false;
+
+    if (sendMessageRef.current) {
+      console.log(`📤 Sending pending message in ${selectedMode} mode`);
+      sendMessageRef.current(pending.content, selectedMode, history, chatSnapshot);
+    }
+  }, [selectedMode, chats]);
+
   // Store the send function in ref for use in useEffect
   useEffect(() => {
     sendMessageRef.current = sendMessageToAPI;
@@ -334,28 +352,17 @@ export default function Home() {
     } else {
       setChats([]);
     }
-    
-    // Only clear messages if NOT auto-switching
-    if (!isAutoSwitching.current) {
+
+    const switchingWithPending = modeStateRef.current.isSwitching && pendingMessageRef.current;
+
+    if (!switchingWithPending) {
       setActiveChat(null);
       setMessages([]);
+      modeStateRef.current.isSwitching = false;
     }
-    
-    // Process pending message after mode switch completes
-    if (isAutoSwitching.current && pendingMessage.current) {
-      const { content, mode } = pendingMessage.current;
-      pendingMessage.current = null;
-      isAutoSwitching.current = false;
-      
-      // Use ref to call the send function
-      setTimeout(() => {
-        if (sendMessageRef.current) {
-          console.log(`📤 Sending pending message in ${mode} mode`);
-          sendMessageRef.current(content, mode, [], loadedChats);
-        }
-      }, 100);
-    }
-  }, [user, selectedMode]);
+
+    flushPendingMessage(loadedChats);
+  }, [user, selectedMode, flushPendingMessage]);
 
   // ---------------------------------------------------------------------------
   // CHAT MANAGEMENT HANDLERS
@@ -406,11 +413,14 @@ export default function Home() {
   // ---------------------------------------------------------------------------
   
   const handleModeChange = useCallback((newMode) => {
-    if (newMode !== selectedMode) {
-      setSelectedMode(newMode);
-      setActiveChat(null);
-      setMessages([]);
-    }
+    if (newMode === selectedMode) return;
+
+    modeStateRef.current.target = newMode;
+    modeStateRef.current.isSwitching = Boolean(pendingMessageRef.current);
+
+    setSelectedMode(newMode);
+    setActiveChat(null);
+    setMessages([]);
   }, [selectedMode]);
 
   // ---------------------------------------------------------------------------
@@ -418,29 +428,47 @@ export default function Home() {
   // ---------------------------------------------------------------------------
   
   const handleSendMessage = useCallback(async (messageContent) => {
-    // Detect the most appropriate mode for this message
-    const suggestedMode = detectAppropriateMode(messageContent);
-    
-    // Check if we need to switch modes
+    const trimmedMessage = messageContent.trim();
+    if (!trimmedMessage) return;
+
+    const suggestedMode = detectAppropriateMode(trimmedMessage);
+
+    // If a mode switch is already in progress, update the pending payload and bail early
+    if (modeStateRef.current.isSwitching) {
+      pendingMessageRef.current = {
+        content: trimmedMessage,
+        mode: suggestedMode,
+        conversationHistory: [],
+        chatsSnapshot: chats,
+      };
+      modeStateRef.current.target = suggestedMode;
+      return;
+    }
+
+    // Auto-switch when the suggestion differs from the current tab
     if (suggestedMode !== selectedMode) {
       console.log(`🔄 Auto-switching from "${selectedMode}" to "${suggestedMode}"`);
-      
-      // Set auto-switching flag and store pending message
-      isAutoSwitching.current = true;
-      pendingMessage.current = { content: messageContent, mode: suggestedMode };
-      
-      // Show notification to user
+
+      modeStateRef.current.isSwitching = true;
+      modeStateRef.current.target = suggestedMode;
+      pendingMessageRef.current = {
+        content: trimmedMessage,
+        mode: suggestedMode,
+        conversationHistory: [],
+        chatsSnapshot: chats,
+      };
+
       setNotificationMode(suggestedMode);
       setShowModeNotification(true);
-      
-      // Switch mode - the useEffect will handle sending the message
       setSelectedMode(suggestedMode);
       return;
     }
-    
-    // Send message in current mode (no switch needed)
+
+    // Send immediately when no switch is necessary
+    modeStateRef.current.isSwitching = false;
+    pendingMessageRef.current = null;
     console.log(`📤 Sending message in current "${selectedMode}" mode`);
-    sendMessageToAPI(messageContent, selectedMode, messages, chats);
+    sendMessageToAPI(trimmedMessage, selectedMode, messages, chats);
   }, [selectedMode, messages, chats, detectAppropriateMode, sendMessageToAPI]);
 
   // ---------------------------------------------------------------------------

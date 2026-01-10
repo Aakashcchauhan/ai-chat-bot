@@ -440,8 +440,9 @@ body {
 }
 
 .prose ul li::before {
-  content: '•';
-  @apply absolute left-0 text-indigo-500 dark:text-indigo-400 font-bold;
+  content: '';
+  @apply absolute left-0 top-2 h-2 w-2 rounded-full;
+  @apply bg-gradient-to-br from-indigo-500 to-violet-500 dark:from-indigo-400 dark:to-violet-400;
 }
 
 .prose ol {
@@ -492,14 +493,19 @@ body {
 /* Blockquotes */
 .prose blockquote {
   @apply my-4 pl-4 py-2 border-l-4 border-indigo-500;
-  @apply bg-slate-50 dark:bg-slate-800/50 rounded-r-lg;
-  @apply text-slate-600 dark:text-slate-400 italic;
+  @apply bg-slate-50 dark:bg-slate-800/50 rounded-r-lg shadow-sm;
+  @apply text-slate-600 dark:text-slate-400 italic relative overflow-hidden;
+}
+
+.prose blockquote::before {
+  content: '"';
+  @apply absolute -left-3 -top-1 text-4xl text-indigo-200 dark:text-indigo-900 select-none;
 }
 
 /* Tables */
 .prose table {
   @apply w-full my-4 text-sm border-collapse;
-  @apply rounded-lg overflow-hidden;
+  @apply rounded-lg overflow-hidden shadow-sm;
   @apply border border-slate-200 dark:border-slate-700;
 }
 
@@ -519,6 +525,10 @@ body {
 
 .prose tbody tr:hover {
   @apply bg-slate-50 dark:bg-slate-800/50;
+}
+
+.prose tbody tr:nth-child(2n) {
+  @apply bg-slate-50/60 dark:bg-slate-900/40;
 }
 
 .prose tbody tr:last-child td {
