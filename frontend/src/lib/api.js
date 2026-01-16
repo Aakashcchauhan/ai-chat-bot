@@ -4,10 +4,28 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 const api = axios.create({
   baseURL: API_URL,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+// Ensure server responses are JSON where expected — helpful to surface
+// errors when CORS or HTML error pages are returned instead of JSON.
+api.interceptors.response.use(
+  (response) => {
+    const contentType = response.headers['content-type'] || '';
+    if (response.config && response.config.headers['Accept'] === 'application/json') {
+      if (!contentType.includes('application/json')) {
+        return Promise.reject(new Error('Invalid response from server'));
+      }
+    }
+    return response;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 export const chatAPI = {
   /**
