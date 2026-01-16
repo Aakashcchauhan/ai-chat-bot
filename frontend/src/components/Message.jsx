@@ -49,13 +49,35 @@ export const Message = ({ message }) => {
         return { roadmap: parsed[firstKey], rawJson: content };
       }
     } catch (error) {
-      // Not a roadmap or invalid JSON
-      console.debug('Not a roadmap:', error);
-    }
+        // Not a roadmap or invalid JSON — keep quiet to avoid noisy logs
+      }
     return null;
   };
 
   const roadmapData = !isUser ? detectRoadmap(message.content) : null;
+
+  // Detect explain-style sections (## Summary, ## Breakdown, ## Example, ## Best Practices, ## Quick Checks)
+  const extractSections = (content) => {
+    const sectionRegex = /^##\s+(.+)$/gm;
+    const lines = content.split(/\r?\n/);
+    const sections = [];
+    let current = null;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const match = line.match(/^##\s+(.+)/);
+      if (match) {
+        if (current) sections.push(current);
+        current = { title: match[1].trim(), body: [] };
+      } else if (current) {
+        current.body.push(lines[i]);
+      }
+    }
+    if (current) sections.push(current);
+    return sections.length ? sections : null;
+  };
+
+  const explainSections = !isUser ? extractSections(message.content) : null;
 
   const handleCopyCode = async (code, language) => {
     const success = await copyToClipboard(code);
@@ -237,6 +259,27 @@ export const Message = ({ message }) => {
                     </div>
                   </div>
                 )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Render explain-style sections if detected
+  if (explainSections && !isUser) {
+    return (
+      <div className={cn('flex w-full mb-4 message-enter', isUser ? 'justify-end' : 'justify-start')}>
+        <div className={cn('max-w-[85%] rounded-2xl px-5 py-4 shadow-sm', isUser ? 'bg-gradient-to-br from-indigo-500 to-violet-600 text-white' : 'bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 text-slate-900 dark:text-slate-100')}>
+          <div className="mb-3">
+            <div className="text-xs font-semibold mb-1 text-slate-500 dark:text-slate-400">AI Assistant</div>
+            {explainSections.map((sec, idx) => (
+              <div key={idx} className="mb-4">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">{sec.title}</h4>
+                <div className="prose prose-sm dark:prose-invert max-w-none">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{sec.body.join('\n')}</ReactMarkdown>
+                </div>
               </div>
             ))}
           </div>
