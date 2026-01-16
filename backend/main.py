@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
+import re
 from fastapi.responses import StreamingResponse
 import json
 from datetime import datetime
@@ -28,9 +29,26 @@ app = FastAPI(
 )
 
 # Configure CORS
+# Support wildcard origins (e.g. https://*.vercel.app) by splitting
+# exact origins and wildcard patterns and passing a regex to the middleware.
+origins = settings.cors_origins_list or []
+exact_origins = [o for o in origins if '*' not in o]
+wildcard_patterns = [o for o in origins if '*' in o]
+allow_origin_regex = None
+if wildcard_patterns:
+    # Convert wildcard patterns to a single regex (escape dots, replace * with .*)
+    regexes = []
+    for p in wildcard_patterns:
+        # ensure we only treat literal chars except *
+        escaped = re.escape(p)
+        pattern = '^' + escaped.replace('\*', '.*') + '$'
+        regexes.append(pattern)
+    allow_origin_regex = '|'.join(regexes)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins_list,
+    allow_origins=exact_origins,
+    allow_origin_regex=allow_origin_regex,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
