@@ -39,7 +39,8 @@ class Settings(BaseSettings):
     # Server Configuration
     host: str = "0.0.0.0"
     port: int = 8000
-    cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
+    # Allow localhost and Vercel preview/deployed origins by default
+    cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000,https://*.vercel.app,https://ai-chat-bot-brown.vercel.app,https://ai-chat-bot-1-m0uq.onrender.com"
     
     # Application Settings
     debug: bool = True
