@@ -1,9 +1,0 @@
-{
-  "name": "ai-chat-bot-repo",
-  "private": true,
-  "scripts": {
-    "dev": "cd frontend && npm run dev",
-    "build": "cd frontend && npm ci && npm run build",
-    "start": "cd frontend && npm run start"
-  }
-}
