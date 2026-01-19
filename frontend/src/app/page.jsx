@@ -8,6 +8,7 @@ import { ChatInput } from '@/components/ChatInput';
 import { Sidebar } from '@/components/Sidebar';
 import { ModeNotification } from '@/components/ModeNotification';
 import { chatAPI } from '@/lib/api';
+import { extractCodeBlocks } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function Home() {
@@ -16,6 +17,7 @@ export default function Home() {
   const [activeChat, setActiveChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [apiError, setApiError] = useState(null);
   const [selectedLanguage, setSelectedLanguage] = useState('python');
   const [selectedMode, setSelectedMode] = useState('code');
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -23,65 +25,34 @@ export default function Home() {
   const [notificationMode, setNotificationMode] = useState('code');
   const [userApiKey, setUserApiKey] = useState('');
 
-  // ===== AUTH =====
-  const { user, loading } = useAuth();
-  const router = useRouter();
+  const { user } = useAuth();
 
-  // ===== REFS FOR PENDING ACTIONS =====
+  const saveChatsToStorage = useCallback((chatsToSave, mode) => {
+    try {
+      const key = user?.uid ? `chats_${user.uid}_${mode}` : `chats_local_${mode}`;
+      localStorage.setItem(key, JSON.stringify(chatsToSave));
+    } catch (e) {
+      console.error('Failed to save chats to storage:', e);
+    }
+  }, [user?.uid]);
+
+  const lastRequestRef = useRef(null);
+  const assistantContentRef = useRef('');
   const pendingActionRef = useRef(null);
 
-  // ===== AUTH REDIRECT =====
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push('/login');
+  const generateChatTitle = useCallback((messages = []) => {
+    try {
+      if (!Array.isArray(messages) || messages.length === 0) return 'New Chat';
+      // Prefer the first user message, fall back to assistant
+      const preferred = messages.find((m) => m.role === 'user' && m.content?.trim()) || messages.find((m) => m.content?.trim());
+      if (!preferred) return 'New Chat';
+      const text = preferred.content.replace(/\s+/g, ' ').trim();
+      return text.length > 40 ? `${text.slice(0, 40).trim()}…` : text;
+    } catch (e) {
+      return 'New Chat';
     }
-  }, [user, loading, router]);
-
-  // ===== LOAD API KEY =====
-  useEffect(() => {
-    if (!user) return;
-    const storedKey = localStorage.getItem(`custom_api_key_${user.uid}`);
-    if (storedKey) setUserApiKey(storedKey);
-  }, [user]);
-
-  // ===== KEYBOARD SHORTCUTS =====
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
-        e.preventDefault();
-        setSidebarOpen((prev) => !prev);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
-
-  // ===== HELPERS =====
-  const handleApiKeyChange = (value) => {
-    setUserApiKey(value);
-    if (user) localStorage.setItem(`custom_api_key_${user.uid}`, value);
-  };
-
-  const generateChatTitle = (msgs) => {
-    const firstUserMsg = msgs.find((m) => m.role === 'user');
-    if (firstUserMsg) {
-      const title = firstUserMsg.content.substring(0, 30);
-      return title + (firstUserMsg.content.length > 30 ? '...' : '');
-    }
-    return 'New Chat';
-  };
-
-  const saveChatsToStorage = useCallback(
-    (updatedChats, mode) => {
-      try {
-        localStorage.setItem(`chats_${user?.uid}_${mode}`, JSON.stringify(updatedChats));
-      } catch (error) {
-        console.error('Failed to save chats:', error);
-      }
-    },
-    [user?.uid]
-  );
-
+  
   // ===== MODE DETECTION =====
   const modePatterns = useMemo(
     () => ({
@@ -135,6 +106,31 @@ export default function Home() {
       const newMessages = [...conversationHistory, userMessage];
       setMessages(newMessages);
       setIsLoading(true);
+      setApiError(null);
+
+      // store last request for retry
+      lastRequestRef.current = { messageContent, mode, conversationHistory, currentChats, currentActiveChat };
+      assistantContentRef.current = '';
+
+      const formatApiError = (err) => {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+        // Axios errors: err.response, err.request
+        if (err?.response) {
+          const status = err.response.status;
+          const serverMsg = err.response.data?.detail || err.response.data?.message || err.response.data || '';
+          if (status === 401 || status === 403) {
+            return `**Authentication error**: The server responded with status ${status}. Please sign in again or check your credentials.`;
+          }
+          return `**Server error (${status})**: ${serverMsg || 'An error occurred on the server. Please try again.'}`;
+        }
+
+        if (err?.request) {
+          return `**Unable to reach the backend**\n\nWe could not connect to the AI backend at ${apiUrl}. This usually means the server is not running or there is a network/CORS issue.\n\nWhat you can try:\n1. Make sure the backend is running: 'uvicorn main:app --reload --port 8000'\n2. Confirm 'NEXT_PUBLIC_API_URL' is set correctly (current: ${apiUrl}).\n3. Check your browser console and network tab for more details.\n\nIf the problem continues, contact the administrator or check the backend logs.`;
+        }
+
+        return `**Unexpected error**: ${err?.message || 'An unknown error occurred.'}`;
+      };
 
       try {
         const response = await chatAPI.sendMessage(
@@ -147,9 +143,10 @@ export default function Home() {
           userApiKey
         );
 
+            // Streaming path handled below; if we get a full response object here (non-stream), use it
         const assistantMessage = {
           role: 'assistant',
-          content: response.message,
+          content: response.message || response.text || String(response),
           timestamp: response.timestamp || new Date().toISOString(),
         };
 
@@ -189,9 +186,12 @@ export default function Home() {
         saveChatsToStorage(updatedChats, mode);
       } catch (error) {
         console.error('Error sending message:', error);
+
+        const userFriendly = formatApiError(error);
+        setApiError(userFriendly);
         const errorMessage = {
           role: 'assistant',
-          content: '❌ Sorry, I encountered an error. Please make sure the backend server is running.',
+          content: `❌ ${userFriendly}`,
           timestamp: new Date().toISOString(),
         };
         setMessages([...newMessages, errorMessage]);
@@ -201,6 +201,13 @@ export default function Home() {
     },
     [selectedLanguage, userApiKey, saveChatsToStorage]
   );
+
+  const handleRetry = useCallback(() => {
+    const last = lastRequestRef.current;
+    if (!last) return;
+    // resend the last request
+    sendMessageToAPI(last.messageContent, last.mode, last.conversationHistory, last.currentChats, last.currentActiveChat);
+  }, [sendMessageToAPI]);
 
   // ===== LOAD CHATS ON MODE CHANGE =====
   useEffect(() => {
@@ -285,6 +292,16 @@ export default function Home() {
     [selectedMode]
   );
 
+  const handleApiKeyChange = useCallback((key) => {
+    setUserApiKey(key || '');
+    try {
+      const storageKey = user?.uid ? `user_api_key_${user.uid}` : 'user_api_key_local';
+      localStorage.setItem(storageKey, key || '');
+    } catch (e) {
+      console.error('Failed to persist API key:', e);
+    }
+  }, [user?.uid]);
+
   // ===== SEND MESSAGE =====
   const handleSendMessage = useCallback(
     (messageContent) => {
@@ -313,21 +330,21 @@ export default function Home() {
   );
 
   // ===== LOADING =====
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center animate-fade-in">
-          <div className="relative inline-flex">
-            <div className="absolute inset-0 bg-gradient-to-r from-primary-500 to-accent-500 rounded-2xl blur-xl opacity-30 animate-pulse"></div>
-            <div className="relative bg-gradient-to-br from-primary-500 to-accent-600 p-4 rounded-2xl shadow-glow">
-              <div className="animate-spin rounded-full h-8 w-8 border-2 border-white border-t-transparent"></div>
-            </div>
-          </div>
-          <p className="mt-6 text-slate-600 dark:text-slate-400 font-medium">Loading your workspace...</p>
-        </div>
-      </div>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <div className="flex items-center justify-center min-h-screen">
+  //       <div className="text-center animate-fade-in">
+  //         <div className="relative inline-flex">
+  //           <div className="absolute inset-0 bg-gradient-to-r from-primary-500 to-accent-500 rounded-2xl blur-xl opacity-30 animate-pulse"></div>
+  //           <div className="relative bg-gradient-to-br from-primary-500 to-accent-600 p-4 rounded-2xl shadow-glow">
+  //             <div className="animate-spin rounded-full h-8 w-8 border-2 border-white border-t-transparent"></div>
+  //           </div>
+  //         </div>
+  //         <p className="mt-6 text-slate-600 dark:text-slate-400 font-medium">Loading your workspace...</p>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   if (!user) return null;
 
@@ -360,7 +377,7 @@ export default function Home() {
           onApiKeyChange={handleApiKeyChange}
         />
 
-        <ChatMessages messages={messages} isLoading={isLoading} onSuggestionClick={handleSuggestionClick} />
+        <ChatMessages messages={messages} isLoading={isLoading} onSuggestionClick={handleSuggestionClick} apiError={apiError} onRetry={handleRetry} />
 
         <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
       </div>

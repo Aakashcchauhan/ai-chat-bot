@@ -91,7 +91,7 @@ export const Sidebar = ({
             text-white
             transition-all duration-300 hover:scale-105 active:scale-95
             shadow-primary-500/25 hover:shadow-primary-500/40
-            ${isMobile ? 'top-[5.5rem] left-4' : 'top-4 left-4'}
+            top-4 left-4
           `}
           aria-label="Open sidebar"
           title="Open sidebar (Ctrl+B)"

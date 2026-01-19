@@ -2,6 +2,8 @@ import google.generativeai as genai
 from typing import List, Dict, Optional
 import re
 import json
+import asyncio
+import functools
 from config import settings
 from models import Message
 
@@ -159,20 +161,20 @@ Guidelines:
             
             # Create chat with history
             chat = model.start_chat(history=history)
-            
+
             # Combine system prompt with user message
             full_message = f"{system_prompt}\n\nUser request: {message}"
-            
-            # Generate response
-            response = chat.send_message(
-                full_message,
-                generation_config=genai.types.GenerationConfig(
-                    max_output_tokens=settings.max_tokens,
-                    temperature=settings.temperature
-                )
+
+            # Generate response in a thread to avoid blocking the event loop
+            gen_cfg = genai.types.GenerationConfig(
+                max_output_tokens=settings.max_tokens,
+                temperature=settings.temperature
             )
-            
-            assistant_message = response.text
+
+            send_fn = functools.partial(chat.send_message, full_message, generation_config=gen_cfg)
+            response = await asyncio.to_thread(send_fn)
+
+            assistant_message = getattr(response, 'text', str(response))
             
             # Check if response contains code
             code_blocks = self._extract_code_blocks(assistant_message)
@@ -254,15 +256,11 @@ Return pure JSON only."""
             for attempt in range(max_retries):
                 try:
                     full_prompt = "You are a JSON generator. Return only valid JSON, no markdown, no extra text.\n\n" + prompt
-                    response = model.generate_content(
-                        full_prompt,
-                        generation_config=genai.types.GenerationConfig(
-                            max_output_tokens=2048,
-                            temperature=0.7
-                        )
-                    )
-                    
-                    assistant_message = response.text.strip()
+                    gen_cfg = genai.types.GenerationConfig(max_output_tokens=2048, temperature=0.7)
+                    gen_fn = functools.partial(model.generate_content, full_prompt, generation_config=gen_cfg)
+                    response = await asyncio.to_thread(gen_fn)
+
+                    assistant_message = getattr(response, 'text', str(response)).strip()
                     
                     # Clean up the response
                     # Remove markdown code blocks if present
@@ -400,17 +398,13 @@ Requirements:
 - Wrap code in markdown code blocks with language specified
 """
             
-            # Generate code
+            # Generate code (run blocking call in thread)
             full_prompt = f"{system_prompt}\n\n{prompt}"
-            response = model.generate_content(
-                full_prompt,
-                generation_config=genai.types.GenerationConfig(
-                    max_output_tokens=settings.max_tokens,
-                    temperature=settings.temperature
-                )
-            )
-            
-            return response.text
+            gen_cfg = genai.types.GenerationConfig(max_output_tokens=settings.max_tokens, temperature=settings.temperature)
+            gen_fn = functools.partial(model.generate_content, full_prompt, generation_config=gen_cfg)
+            response = await asyncio.to_thread(gen_fn)
+
+            return getattr(response, 'text', str(response))
             
         except Exception as e:
             raise Exception(f"Error generating code: {str(e)}")
@@ -444,19 +438,35 @@ Requirements:
             # Combine system prompt with user message
             full_message = f"{system_prompt}\n\nUser request: {message}"
             
-            # Stream response
-            response = chat.send_message(
-                full_message,
-                generation_config=genai.types.GenerationConfig(
-                    max_output_tokens=settings.max_tokens,
-                    temperature=settings.temperature
-                ),
-                stream=True
-            )
-            
-            for chunk in response:
-                if chunk.text:
-                    yield chunk.text
+            # Stream response using a background thread and an asyncio queue bridge
+            gen_cfg = genai.types.GenerationConfig(max_output_tokens=settings.max_tokens, temperature=settings.temperature)
+
+            loop = asyncio.get_event_loop()
+            q: asyncio.Queue = asyncio.Queue()
+
+            def produce():
+                try:
+                    resp_iter = chat.send_message(full_message, generation_config=gen_cfg, stream=True)
+                    for chunk in resp_iter:
+                        text = getattr(chunk, 'text', None)
+                        if text:
+                            # safely put into asyncio queue from thread
+                            loop.call_soon_threadsafe(q.put_nowait, text)
+                except Exception as e:
+                    loop.call_soon_threadsafe(q.put_nowait, f"__ERROR__:{str(e)}")
+                finally:
+                    loop.call_soon_threadsafe(q.put_nowait, None)
+
+            # start producer in thread
+            asyncio.create_task(asyncio.to_thread(produce))
+
+            while True:
+                item = await q.get()
+                if item is None:
+                    break
+                if isinstance(item, str) and item.startswith("__ERROR__:"):
+                    raise Exception(item.replace("__ERROR__:", ""))
+                yield item
                     
         except Exception as e:
             raise Exception(f"Error streaming response: {str(e)}")

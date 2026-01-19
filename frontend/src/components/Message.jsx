@@ -1,4 +1,5 @@
 ﻿import React from 'react';
+import ChatResponse from './ChatResponse';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/cjs/styles/prism';
@@ -298,7 +299,7 @@ export const Message = ({ message }) => {
     >
       <div
         className={cn(
-          'max-w-[85%] rounded-2xl px-5 py-4 shadow-sm',
+          'max-w-[85%] min-w-0 rounded-2xl px-5 py-4 shadow-sm',
           isUser
             ? 'bg-gradient-to-br from-indigo-500 to-violet-600 text-white'
             : 'bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 text-slate-900 dark:text-slate-100'
@@ -316,76 +317,8 @@ export const Message = ({ message }) => {
         </div>
 
         <div className="prose prose-sm dark:prose-invert max-w-none">
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            components={{
-              code({ node, className, children, ...props }) {
-                const match = /language-(\w+)/.exec(className || '');
-                const language = match ? match[1] : '';
-                const code = String(children).replace(/\n$/, '');
-                const inline = !className;
-
-                if (!inline && language) {
-                  return (
-                    <div className="code-block relative group my-4 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700">
-                      <div className="flex items-center justify-between bg-slate-800 px-4 py-2.5">
-                        <span className="text-xs text-slate-400 font-mono font-medium uppercase tracking-wide">
-                          {language}
-                        </span>
-                        <div className="flex gap-1">
-                          <button
-                            onClick={() => handleCopyCode(code, language)}
-                            className="text-slate-400 hover:text-white transition-colors p-1.5 hover:bg-slate-700 rounded-md"
-                            title="Copy code"
-                          >
-                            {copiedCode === language ? (
-                              <Check size={14} />
-                            ) : (
-                              <Copy size={14} />
-                            )}
-                          </button>
-                          <button
-                            onClick={() => handleDownloadCode(code, language)}
-                            className="text-slate-400 hover:text-white transition-colors p-1.5 hover:bg-slate-700 rounded-md"
-                            title="Download code"
-                          >
-                            <Download size={14} />
-                          </button>
-                        </div>
-                      </div>
-                      <SyntaxHighlighter
-                        style={vscDarkPlus}
-                        language={language}
-                        PreTag="div"
-                        customStyle={{
-                          margin: 0,
-                          borderRadius: 0,
-                          fontSize: '0.875rem',
-                        }}
-                        {...props}
-                      >
-                        {code}
-                      </SyntaxHighlighter>
-                    </div>
-                  );
-                }
-
-                return (
-                  <code
-                    className={cn(
-                      'bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded-md text-sm font-mono text-indigo-600 dark:text-indigo-400',
-                      className
-                    )}
-                    {...props}
-                  >
-                    {children}
-                  </code>
-                );
-              },
-            }}
-          >
-            {message.content}
-          </ReactMarkdown>
+          {/* centralized Markdown + code rendering component */}
+          <ChatResponse content={message.content} />
         </div>
       </div>
     </div>

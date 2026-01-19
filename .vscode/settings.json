@@ -1,0 +1,49 @@
+{
+  // Exclude large/generated folders from explorer, search and file watcher
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/node_modules/**": true,
+    "**/.next/**": true,
+    "**/dist/**": true,
+    "**/build/**": true,
+    "**/static/**": true,
+    "**/venv/**": true,
+    "**/.venv/**": true,
+    "**/__pycache__/**": true
+  },
+
+  "files.exclude": {
+    "**/.next": true,
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/build": true,
+    "**/static": true,
+    "**/venv": true,
+    "**/.venv": true,
+    "**/__pycache__": true
+  },
+
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/.next": true,
+    "**/venv": true,
+    "**/.venv": true,
+    "**/build": true,
+    "**/dist": true,
+    "**/__pycache__": true
+  },
+
+  // Reduce Git activity while editing large repos
+  "git.autofetch": false,
+
+  // UI / startup improvements
+  "workbench.startupEditor": "none",
+  "explorer.autoReveal": false,
+
+  // Extensions updates can wait (avoid background checks while working)
+  "extensions.autoUpdate": false,
+
+  // Reduce watcher limits on Windows (if you still hit OS limits, increase manually)
+  // Note: adjusting OS-level watcher limits may be necessary for very large repos.
+  "files.maxMemoryForLargeFilesMB": 4096
+}

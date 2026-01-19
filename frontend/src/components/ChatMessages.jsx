@@ -33,6 +33,8 @@ export const ChatMessages = ({
   messages,
   isLoading = false,
   onSuggestionClick,
+  apiError = null,
+  onRetry = null,
 }) => {
   const messagesEndRef = useRef(null);
 
@@ -46,6 +48,21 @@ export const ChatMessages = ({
 
   return (
     <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
+      {apiError && (
+        <div className="mx-auto max-w-3xl">
+          <div className="rounded-lg border-l-4 border-red-500 bg-red-50 dark:bg-red-900/30 p-4 mb-4 flex items-start justify-between">
+            <div className="text-sm text-red-800 dark:text-red-200 whitespace-pre-wrap">{apiError}</div>
+            <div className="flex-shrink-0 ml-4">
+              <button
+                onClick={() => onRetry?.()}
+                className="px-3 py-1.5 bg-red-500 text-white rounded-md text-sm hover:bg-red-600"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {messages.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-full text-center px-4">
           <div className="max-w-2xl space-y-8">
