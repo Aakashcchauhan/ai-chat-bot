@@ -299,29 +299,31 @@ export const Message = ({ message }) => {
     >
       <div
         className={cn(
-          'max-w-[85%] min-w-0 rounded-2xl px-5 py-4 shadow-sm',
+          'max-w-[85%] min-w-0 rounded-2xl px-5 py-4 shadow-sm transition-colors',
           isUser
             ? 'bg-gradient-to-br from-indigo-500 to-violet-600 text-white'
-            : 'bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 text-slate-900 dark:text-slate-100'
+            // Updated to Dark Gray styles below
+            : 'bg-slate-800 dark:bg-slate-900 border border-slate-700 text-slate-100'
         )}
       >
         <div className="flex items-start gap-2 mb-2">
           <div className="flex-1">
             <div className={cn(
               "text-xs font-semibold mb-1",
-              isUser ? 'text-indigo-200' : 'text-slate-500 dark:text-slate-400'
+              isUser ? 'text-indigo-200' : 'text-slate-400'
             )}>
               {isUser ? 'You' : 'AI Assistant'}
             </div>
           </div>
         </div>
 
-        <div className="prose prose-sm dark:prose-invert max-w-none">
+        <div className="prose prose-sm prose-invert max-w-none">
           {/* centralized Markdown + code rendering component */}
           <ChatResponse content={message.content} />
         </div>
       </div>
     </div>
+
   );
 };
 
