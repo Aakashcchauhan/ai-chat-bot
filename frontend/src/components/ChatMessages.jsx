@@ -75,7 +75,7 @@ export const ChatMessages = ({
                 </div>
               </div>
               <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 via-indigo-900 to-slate-900 dark:from-white dark:via-indigo-200 dark:to-white bg-clip-text text-transparent">
-                AI Code Generator
+                CODEHUB
               </h1>
               <p className="text-lg text-slate-600 dark:text-slate-400 max-w-md mx-auto">
                 Your intelligent coding companion. Generate code, explain concepts, and get instant help with any programming question.
