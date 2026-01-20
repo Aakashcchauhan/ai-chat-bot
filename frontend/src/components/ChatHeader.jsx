@@ -81,7 +81,7 @@ export const ChatHeader = ({
               </div>
               <div className="min-w-0 hidden sm:block">
                 <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent truncate">
-                  AI Code Assistant
+                  CODEHUB
                 </h1>
                 <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
                   <Zap className="w-3 h-3 text-amber-500" />
